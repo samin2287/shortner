@@ -8,10 +8,11 @@ const shortUrlSchema = new mongoose.Schema({
   shortURL: {
     type: String,
     required: true,
+    unique: true,
   },
   user: {
     type: mongoose.Schema.ObjectId,
-    ref: "User",
+    ref: "user",
   },
   visitHistory: [
     {
@@ -22,4 +23,4 @@ const shortUrlSchema = new mongoose.Schema({
     },
   ],
 });
-module.exports = mongoose.model("shorturl", shortnerSchema);
+module.exports = mongoose.model("shorturl", shortUrlSchema);

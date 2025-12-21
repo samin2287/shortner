@@ -11,8 +11,10 @@ const isValidPassword = (password) => {
   return typeof password === "string" && passwordRegex.test(password);
 };
 
-isValidURL = (url) => {
-  const urlRegex = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w-./?%&=]*)?$/i;
-  return urlRegex.test(url);
+const isValidURL = (url) => {
+  const urlFormate =
+    /^(https?|ftp):\/\/((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})|localhost)(:\d{1,5})?(\/[^\s]*)?$/;
+  return urlFormate.test(url);
 };
-module.exports = { isValidEmail, isValidFullName, isValidPassword };
+
+module.exports = { isValidEmail, isValidFullName, isValidPassword, isValidURL };

@@ -7,8 +7,6 @@ const {
 } = require("../utils/validation");
 const userSchema = require("../models/userSchema");
 const signup = async (req, res) => {
-  console.log("REQ BODY =====>", req.body);
-
   const { fullName, email, password } = req.body;
   try {
     //full name validation
@@ -64,4 +62,3 @@ const login = async (req, res) => {
 };
 // <<=====  LOGIN CONTROLLER END HERE ======>>
 module.exports = { signup, login };
-  
