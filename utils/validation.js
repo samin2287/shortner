@@ -11,4 +11,8 @@ const isValidPassword = (password) => {
   return typeof password === "string" && passwordRegex.test(password);
 };
 
+isValidURL = (url) => {
+  const urlRegex = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w-./?%&=]*)?$/i;
+  return urlRegex.test(url);
+};
 module.exports = { isValidEmail, isValidFullName, isValidPassword };

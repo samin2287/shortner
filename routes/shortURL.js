@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-router.post("/shortURL", () => {
+router.post("/create", () => {
   console.log();
 });
 module.exports = router;
