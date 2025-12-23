@@ -31,6 +31,7 @@ const craeteShortURL = async (req, res) => {
     const URLData = new shortUrlSchema({
       originalURL,
       shortURL,
+      user: req.user?.id,
     });
 
     await URLData.save();
@@ -39,8 +40,6 @@ const craeteShortURL = async (req, res) => {
       shortURL: URLData.shortURL,
     });
   } catch (error) {
-    console.log(error);
-
     return res.status(500).send({ message: "Internal Server Error" });
   }
 };
@@ -56,10 +55,32 @@ const redirectURL = async (req, res) => {
     if (!urlData) {
       return res.redirect(process.env.CLIENT_REDIRECT_URL + urlData.shortURL);
     }
+
+    if (urlData.user) {
+      urlData.visitHistory.push({ visitTime: Date.now() });
+      await urlData.save();
+    }
     res.redirect(urlData.originalURL);
   } catch (error) {
     res.redirect(process.env.CLIENT_REDIRECT_URL + urlData.shortURL);
   }
 };
 //<===REDIRECT URL FUNCTION END===>
-module.exports = { generateRandomString, craeteShortURL, redirectURL };
+const getShortURLs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userURLs = await shortUrlSchema
+      .find({ user: userId })
+      .select("-user");
+    res.status(200).send({ userURLs });
+  } catch (error) {
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = {
+  generateRandomString,
+  craeteShortURL,
+  redirectURL,
+  getShortURLs,
+};

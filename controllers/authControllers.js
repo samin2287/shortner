@@ -1,11 +1,15 @@
 // <<=====  SIGNUP AND LOGIN CONTROLLERS START HERE ======>>
 const user = require("../models/userSchema");
+
 const {
   isValidEmail,
   isValidPassword,
   isValidFullName,
 } = require("../utils/validation");
 const userSchema = require("../models/userSchema");
+const { generateAccessToken } = require("../utils/token");
+
+// <<=====  SIGNUP CONTROLLER START HERE ======>>
 const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
   try {
@@ -34,7 +38,6 @@ const signup = async (req, res) => {
 
     res.status(201).send("User created successfully");
   } catch (error) {
-    console.log(error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -54,11 +57,33 @@ const login = async (req, res) => {
     const matchPassword = await existingUser.comparePassword(password);
     if (!matchPassword) return res.status(400).send("Invalid password");
 
-    res.status(200).send("Login successful");
+    const token = generateAccessToken({
+      id: existingUser._id,
+      email: existingUser.email,
+    });
+    res.cookie("accessToken", token);
+
+    res.status(200).send({ message: "Login successful" });
   } catch (error) {
-    console.log(error);
     return res.status(500).send({ message: "Internal server error" });
   }
 };
 // <<=====  LOGIN CONTROLLER END HERE ======>>
-module.exports = { signup, login };
+// <<=====  GET PROFILE START HERE ======>>
+
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userData = await userSchema
+      .findById(userId)
+      .select("-password -__v -createdAt -updatedAt");
+    if (!userData) return res.status(404).send({ message: "User not found" });
+
+    res.status(200).send({ userData });
+  } catch (error) {
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+// <<=====  GET PROFILE END HERE ======>>
+
+module.exports = { signup, login, getProfile };
