@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 app.use(express.json());
 const dbConfig = require("./dbConfig");
@@ -8,6 +9,7 @@ const router = require("./routes");
 const cookieParser = require("cookie-parser");
 const { isValidURL } = require("./utils/validation");
 const { generateRandomString } = require("./controllers/shortnerController");
+
 app.use(express.json());
 dbConfig();
 app.use(cookieParser());
