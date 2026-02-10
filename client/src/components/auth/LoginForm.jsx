@@ -1,16 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Button from "../ui/Button";
+import { loginUser, resetAuthState } from "../../store/slices/authSlice";
 
 // -------------------- Login Form Component --------------------
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { loading, error, isAuthenticated } = useSelector(
+    (state) => state.userData
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    dispatch(resetAuthState());
+  }, [dispatch]);
 
   const validate = () => {
     const err = {};
@@ -19,27 +33,13 @@ const LoginForm = () => {
     return err;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const err = validate();
     setErrors(err);
     if (Object.keys(err).length) return;
 
-    setLoading(true);
-    setErrorMessage("");
-
-    // Fake auth call
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "user@example.com" && password === "password") {
-        // success -> navigate to home
-        navigate("/", { replace: true });
-      } else {
-        setErrorMessage(
-          "Invalid email or password. Try user@example.com / password for demo."
-        );
-      }
-    }, 900);
+    dispatch(loginUser({ email, password }));
   };
 
   return (
@@ -50,9 +50,9 @@ const LoginForm = () => {
           Log in to access your dashboard and shorten URLs.
         </p>
 
-        {errorMessage && (
+        {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-700 rounded">
-            {errorMessage}
+            {typeof error === "string" ? error : error.message || "Login failed. Please try again."}
           </div>
         )}
 
@@ -65,13 +65,11 @@ const LoginForm = () => {
               className={`flex items-center border ${
                 errors.email ? "border-red-200" : "border-gray-200"
               } rounded-lg overflow-hidden`}>
-              <div className="p-3 bg-gray-50">
-                <Mail className="w-5 h-5 text-gray-400" />
-              </div>
+             
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="input your email"
                 className="w-full px-4 py-3 outline-none"
                 type="email"
               />
@@ -89,9 +87,7 @@ const LoginForm = () => {
               className={`flex items-center border ${
                 errors.password ? "border-red-200" : "border-gray-200"
               } rounded-lg overflow-hidden`}>
-              <div className="p-3 bg-gray-50">
-                <Lock className="w-5 h-5 text-gray-400" />
-              </div>
+          
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

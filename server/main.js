@@ -10,7 +10,13 @@ const cookieParser = require("cookie-parser");
 const { isValidURL } = require("./utils/validation");
 const { generateRandomString } = require("./controllers/shortnerController");
 
-app.use(express.json());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    credentials: true,
+  })
+);
+
 dbConfig();
 app.use(cookieParser());
 app.use(router);

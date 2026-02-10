@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Button from "../ui/Button";
+import { registerUser, resetAuthState } from "../../store/slices/authSlice";
+
 const RegisterForm = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { loading, error, success, message } = useSelector(
+    (state) => state.userData
+  );
 
   const [form, setForm] = useState({
     name: "",
@@ -14,8 +21,20 @@ const RegisterForm = () => {
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    dispatch(resetAuthState());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        dispatch(resetAuthState());
+        navigate("/login");
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [success, dispatch, navigate]);
 
   // ---------- Validation ----------
   const validate = () => {
@@ -24,7 +43,8 @@ const RegisterForm = () => {
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email))
       e.email = "Invalid email";
-    if (form.password.length < 6) e.password = "Minimum 6 characters";
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(form.password))
+      e.password = "Password must be at least 6 characters and include letters and numbers";
     if (form.confirm !== form.password) e.confirm = "Password not matched";
     return e;
   };
@@ -36,17 +56,18 @@ const RegisterForm = () => {
     setErrors({ ...errors, [name]: "" });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const eObj = validate();
     if (Object.keys(eObj).length) return setErrors(eObj);
 
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess("Account created successfully!");
-      setTimeout(() => navigate("/login"), 1200);
-    }, 1000);
+    dispatch(
+      registerUser({
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+      })
+    );
   };
 
   return (
@@ -59,8 +80,14 @@ const RegisterForm = () => {
 
         {success && (
           <p className="mb-4 text-green-600 bg-green-50 p-3 rounded">
-            {success}
+            {message || "Account created successfully!"}
           </p>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-700 rounded">
+            {typeof error === "string" ? error : error.message || "Registration failed. Please try again."}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">

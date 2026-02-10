@@ -1,9 +1,21 @@
 import React from "react";
 import { Copy, Check } from "lucide-react";
 import Button from "../ui/Button";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 // -------------------- Shortener Result Component --------------------
 const ShortenerResult = ({ shortUrl, originalUrl, copied, onCopy }) => {
   if (!shortUrl) return null;
+  // if shortUrl is an id-like string (no protocol), build full server redirect URL
+  let displayShort = shortUrl;
+  try {
+    const u = new URL(shortUrl);
+    displayShort = shortUrl; // absolute URL
+  } catch (e) {
+    // not an absolute URL -> treat as id
+    const id = shortUrl.replace(/^\//, "");
+    displayShort = `${API_BASE}/${id}`;
+  }
 
   return (
     <div className="mt-8 p-6 bg-linear-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 animate-fadeIn">
@@ -22,8 +34,10 @@ const ShortenerResult = ({ shortUrl, originalUrl, copied, onCopy }) => {
         <div>
           <p className="text-sm font-medium text-gray-600 mb-2">Short URL</p>
           <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
-            <div className="grow p-3 bg-white rounded-lg border border-gray-200 overflow-x-auto">
-              <p className="text-green-700 font-medium break-all">{shortUrl}</p>
+              <div className="grow p-3 bg-white rounded-lg border border-gray-200 overflow-x-auto">
+              <a href={displayShort} target="_blank" rel="noreferrer" className="text-green-700 font-medium break-all">
+                {displayShort}
+              </a>
             </div>
 
             <Button

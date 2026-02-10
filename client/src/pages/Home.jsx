@@ -1,148 +1,5 @@
-// import React, { useState } from "react";
-// import Header from "../components/layout/Header";
-// import Footer from "../components/layout/Footer";
-// import ShortenerForm from "../components/shortener/ShortenerForm";
-// import ShortenerResult from "../components/shortener/ShortenerResult";
-// import UrlHistory from "../components/shortener/UrlHistory";
-// import Features from "../components/sections/Features";
-// import HowItWorks from "../components/sections/HowItWorks";
-
-// const ShortUrlMaker = () => {
-//   const [originalUrl, setOriginalUrl] = useState("");
-//   const [shortUrl, setShortUrl] = useState("");
-//   const [copied, setCopied] = useState(false);
-//   const [loading, setLoading] = useState(false);
-//   const [urlHistory, setUrlHistory] = useState([]);
-
-//   // Generate a random short URL (in a real app, this would call an API)
-//   const generateShortUrl = (url) => {
-//     const characters =
-//       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-//     let result = "";
-//     for (let i = 0; i < 6; i++) {
-//       result += characters.charAt(
-//         Math.floor(Math.random() * characters.length)
-//       );
-//     }
-//     return `https://short.url/${result}`;
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-
-//     if (!originalUrl.trim()) {
-//       alert("Please enter a valid URL");
-//       return;
-//     }
-
-//     // Validate URL format
-//     const urlPattern = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w- .\/?%&=]*)?$/;
-//     if (!urlPattern.test(originalUrl)) {
-//       alert("Please enter a valid URL starting with http:// or https://");
-//       return;
-//     }
-
-//     setLoading(true);
-
-//     // Simulate API call delay
-//     setTimeout(() => {
-//       const newShortUrl = generateShortUrl(originalUrl);
-//       setShortUrl(newShortUrl);
-
-//       // Add to history
-//       setUrlHistory((prev) => [
-//         {
-//           original: originalUrl,
-//           short: newShortUrl,
-//           date: new Date().toLocaleDateString(),
-//         },
-//         ...prev.slice(0, 4), // Keep only last 5 URLs
-//       ]);
-
-//       setLoading(false);
-//     }, 800);
-//   };
-
-//   const handleCopy = () => {
-//     navigator.clipboard
-//       .writeText(shortUrl)
-//       .then(() => {
-//         setCopied(true);
-//         setTimeout(() => setCopied(false), 2000);
-//       })
-//       .catch((err) => {
-//         console.error("Failed to copy: ", err);
-//       });
-//   };
-
-//   const handleReset = () => {
-//     setOriginalUrl("");
-//     setShortUrl("");
-//   };
-
-//   // Features are provided by `components/sections/Features.jsx`
-
-//   // How it works steps are provided by `components/sections/HowItWorks.jsx`
-
-//   return (
-//     <div className="min-h-screen bg-linear-to-br from-emerald-50 to-green-50">
-//       {/* Header */}
-//       <Header />
-
-//       <main className="container mx-auto px-4 py-8 max-w-6xl">
-//         {/* -------------------- Shortener Section -------------------- */}
-//         <section className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-//           <div className="flex items-center gap-3 mb-6">
-//             <div className="p-2 bg-green-100 rounded-lg">
-//               {/* small accent */}
-//             </div>
-//             <h2 className="text-2xl font-bold text-gray-800">
-//               Shorten Your URL
-//             </h2>
-//           </div>
-
-//           {/* Form */}
-//           <ShortenerForm
-//             originalUrl={originalUrl}
-//             setOriginalUrl={setOriginalUrl}
-//             onSubmit={handleSubmit}
-//             loading={loading}
-//             onReset={handleReset}
-//           />
-
-//           {/* Result */}
-//           <ShortenerResult
-//             shortUrl={shortUrl}
-//             originalUrl={originalUrl}
-//             copied={copied}
-//             onCopy={() => handleCopy()}
-//           />
-
-//           {/* History */}
-//           <UrlHistory
-//             urlHistory={urlHistory}
-//             onCopyHistory={(text) => {
-//               navigator.clipboard.writeText(text);
-//               alert("URL copied to clipboard!");
-//             }}
-//           />
-//         </section>
-
-//         {/* Features */}
-//         <Features />
-
-//         {/* How it works */}
-//         <HowItWorks />
-
-//         {/* Footer */}
-//         <Footer />
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default ShortUrlMaker;
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import ShortenerForm from "../components/shortener/ShortenerForm";
@@ -152,31 +9,45 @@ import UrlHistory from "../components/shortener/UrlHistory";
 import { URLService } from "../api";
 
 const Home = () => {
+  const { user } = useSelector((state) => state.userData);
   const [originalUrl, setOriginalUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
+  const [resultOriginal, setResultOriginal] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [urlHistory, setUrlHistory] = useState([]);
 
-  // 🔹 Load URL history from backend
+  // small client-side generator for unauthenticated users
+  const generateShortUrl = () => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let res = "";
+    for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+    return `${window.location.origin}/${res}`;
+  };
+
+  // 🔹 Load URL history from backend (only meaningful when authenticated)
   useEffect(() => {
     const fetchUrls = async () => {
       try {
         const data = await URLService.getAll();
-        setUrlHistory(
-          data.map((item) => ({
-            original: item.originalURL,
-            short: item.shortURL,
-            date: new Date(item.createdAt).toLocaleDateString(),
-          }))
-        );
+        if (data?.userURLs) {
+          setUrlHistory(
+            data.userURLs.map((item) => ({
+              original: item.originalURL,
+              short: item.shortURL,
+              date: new Date(item.createdAt).toLocaleDateString(),
+            }))
+          );
+        }
       } catch (error) {
-        console.error("History load failed", error);
+        // likely unauthenticated or server error — keep history empty
+        setUrlHistory([]);
       }
     };
 
-    fetchUrls();
-  }, []);
+    if (user) fetchUrls();
+  }, [user]);
 
   // 🔹 Submit handler (API call)
   const handleSubmit = async (e) => {
@@ -187,21 +58,25 @@ const Home = () => {
       return;
     }
 
+    // Always send to server — server accepts unauthenticated creates (no user attached)
     try {
       setLoading(true);
-
       const data = await URLService.createShort(originalUrl);
 
+      setResultOriginal(originalUrl);
       setShortUrl(data.shortURL);
 
-      setUrlHistory((prev) => [
-        {
-          original: data.originalURL,
-          short: data.shortURL,
-          date: new Date(data.createdAt).toLocaleDateString(),
-        },
-        ...prev,
-      ]);
+      // if server returned created entry, prepend to history for logged-in users
+      if (data?.originalURL) {
+        setUrlHistory((prev) => [
+          {
+            original: data.originalURL,
+            short: data.shortURL,
+            date: new Date(data.createdAt).toLocaleDateString(),
+          },
+          ...prev,
+        ]);
+      }
 
       setOriginalUrl("");
     } catch (error) {
@@ -214,9 +89,25 @@ const Home = () => {
 
   // 🔹 Copy short URL
   const handleCopy = () => {
-    navigator.clipboard.writeText(shortUrl);
+    // copy full redirect URL when shortUrl is id-like
+    let toCopy = shortUrl;
+    try {
+      new URL(shortUrl);
+    } catch (e) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      toCopy = `${apiBase}/${shortUrl.replace(/^\//, "")}`;
+    }
+    navigator.clipboard.writeText(toCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // 🔹 Reset form and result
+  const handleReset = () => {
+    setOriginalUrl("");
+    setShortUrl("");
+    setCopied(false);
+    setResultOriginal("");
   };
 
   return (
@@ -224,22 +115,41 @@ const Home = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-5xl">
-        <section className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold mb-4">URL Shortener</h2>
+        <section className="bg-white p-6 rounded-xl shadow-md mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">URL Shortener</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Shorten a link and see your history from the server.
+              </p>
+            </div>
+            {user && (
+              <div className="rounded-2xl bg-emerald-50 p-4 border border-emerald-100">
+                <p className="text-sm text-gray-600">Signed in as</p>
+                <p className="font-semibold text-gray-900">{user.fullName || user.email}</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+            )}
+          </div>
 
           <ShortenerForm
             originalUrl={originalUrl}
             setOriginalUrl={setOriginalUrl}
             onSubmit={handleSubmit}
             loading={loading}
+            onReset={handleReset}
           />
 
           <ShortenerResult
             shortUrl={shortUrl}
+            originalUrl={resultOriginal}
             copied={copied}
             onCopy={handleCopy}
           />
+        </section>
 
+        <section className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-xl font-semibold mb-4">Your shortened URLs</h3>
           <UrlHistory
             urlHistory={urlHistory}
             onCopyHistory={(url) => navigator.clipboard.writeText(url)}

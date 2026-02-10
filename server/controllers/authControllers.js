@@ -36,7 +36,25 @@ const signup = async (req, res) => {
 
     await user.save();
 
-    res.status(201).send("User created successfully");
+    // create token and set cookie
+    const token = generateAccessToken({ id: user._id, email: user.email });
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    };
+    res.cookie("accessToken", token, cookieOptions);
+
+    res.status(201).send({
+      message: "User created successfully",
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+      },
+    });
   } catch (error) {
     res.status(500).send({ message: "Internal server error" });
   }
@@ -61,14 +79,48 @@ const login = async (req, res) => {
       id: existingUser._id,
       email: existingUser.email,
     });
-    res.cookie("accessToken", token);
 
-    res.status(200).send({ message: "Login successful" });
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    };
+    res.cookie("accessToken", token, cookieOptions);
+
+    res.status(200).send({
+      message: "Login successful",
+      token,
+      user: {
+        id: existingUser._id,
+        fullName: existingUser.fullName,
+        email: existingUser.email,
+      },
+    });
   } catch (error) {
     return res.status(500).send({ message: "Internal server error" });
   }
 };
 // <<=====  LOGIN CONTROLLER END HERE ======>>
+// <<===== LOGOUT CONTROLLER START HERE ======>>
+
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("accessToken");
+
+    return res.status(200).send({
+      success: true,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// <<===== LOGOUT CONTROLLER END HERE ======>>
 // <<=====  GET PROFILE START HERE ======>>
 
 const getProfile = async (req, res) => {
@@ -86,4 +138,4 @@ const getProfile = async (req, res) => {
 };
 // <<=====  GET PROFILE END HERE ======>>
 
-module.exports = { signup, login, getProfile };
+module.exports = { signup, login, logout, getProfile };

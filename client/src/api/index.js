@@ -1,44 +1,53 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
-// ---------- REQUEST INTERCEPTOR START ----------
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (token) {
-      config.headers.Authorization = `${token}`;
+      config.headers.accessToken = token;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
-// ---------- REQUEST INTERCEPTOR END ----------
-const authService = {
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userData");
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authService = {
   register: async (fullName, email, password) => {
-    const res = await api.post("/auth/registration", {
-      fullName,
-      email,
-      password,
-    });
+    const res = await api.post("/auth/signup", { fullName, email, password });
     return res.data;
   },
   login: async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
     return res.data;
   },
-
+  logout: async () => {
+    const res = await api.post("/auth/logout");
+    return res.data;
+  },
   getProfile: async () => {
-    const res = await api.get("/auth/getprofile");
+    const res = await api.get("/auth/profile");
     return res.data;
   },
 };
 
-const URLService = {
+export const URLService = {
   createShort: async (originalURL) => {
     const res = await api.post("/url/create", { originalURL });
     return res.data;
@@ -48,4 +57,5 @@ const URLService = {
     return res.data;
   },
 };
-export { api, authService, URLService };
+
+export default api;

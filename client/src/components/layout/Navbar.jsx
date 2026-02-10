@@ -1,17 +1,27 @@
 import React from "react";
 import { useState } from "react";
 import { Link as LinkIcon, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser } from "../../store/slices/authSlice";
 
 // -------------------- Responsive Navbar (Green Theme) --------------------
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.userData);
 
   const navLinks = [
     { label: "Home", href: "#" },
     { label: "Features", href: "#features" },
     { label: "Analytics", href: "#analytics" },
   ];
+
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    navigate("/login", { replace: true });
+  };
 
   return (
     <nav className="bg-white shadow-sm">
@@ -41,11 +51,31 @@ const Navbar = () => {
               </a>
             ))}
 
-            <Link
-              to="/register"
-              className="ml-4 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500  px-4 py-2 text-sm inline-flex items-center justify-center font-medium rounded-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2">
-              Register
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-700">
+                  {user?.fullName || user?.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-sm inline-flex items-center justify-center font-medium rounded-lg transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-gray-700 hover:text-emerald-600 transition">
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-sm inline-flex items-center justify-center font-medium rounded-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,11 +106,26 @@ const Navbar = () => {
               </a>
             ))}
 
-            <Link
-              to="/register"
-              className="ml-4 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500  px-4 py-2 text-sm inline-flex items-center justify-center font-medium rounded-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2">
-              Register
-            </Link>
+            {isAuthenticated ? (
+              <button
+                onClick={handleLogout}
+                className="w-full text-left bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-sm font-medium rounded-lg transition">
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block text-gray-700 text-base">
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-sm font-medium rounded-lg transition">
+                  Register
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

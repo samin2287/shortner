@@ -49,20 +49,27 @@ const redirectURL = async (req, res) => {
   try {
     const params = req.params;
     if (!params.id) {
-      return;
+      return res.status(400).send({ message: "Missing short id" });
     }
+    console.log("Redirect request for id:", params.id);
     const urlData = await shortUrlSchema.findOne({ shortURL: params.id });
+    console.log("Lookup result:", !!urlData, urlData ? { shortURL: urlData.shortURL, originalURL: urlData.originalURL } : null);
     if (!urlData) {
-      return res.redirect(process.env.CLIENT_REDIRECT_URL + urlData.shortURL);
+      // not found -> redirect to client home or show 404
+      const redirectBase = process.env.CLIENT_REDIRECT_URL || "http://localhost:5173/";
+      return res.redirect(redirectBase);
     }
 
     if (urlData.user) {
       urlData.visitHistory.push({ visitTime: Date.now() });
       await urlData.save();
     }
-    res.redirect(urlData.originalURL);
+
+    return res.redirect(urlData.originalURL);
   } catch (error) {
-    res.redirect(process.env.CLIENT_REDIRECT_URL + urlData.shortURL);
+    console.error(error);
+    const redirectBase = process.env.CLIENT_REDIRECT_URL || "http://localhost:5173/";
+    return res.redirect(redirectBase);
   }
 };
 //<===REDIRECT URL FUNCTION END===>
