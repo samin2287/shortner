@@ -9,14 +9,9 @@ const router = require("./routes");
 const cookieParser = require("cookie-parser");
 const { isValidURL } = require("./utils/validation");
 const { generateRandomString } = require("./controllers/shortnerController");
+const PORT = process.env.PORT || 8000;
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
-    credentials: true,
-  })
-);
-
+app.use(express.json());
 dbConfig();
 app.use(cookieParser());
 app.use(router);
@@ -28,6 +23,6 @@ app.get("/", (req, res) => {
 console.log(isValidURL(``));
 console.log(generateRandomString(6));
 
-app.listen(8000, () => {
-  console.log(`Server is running`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
